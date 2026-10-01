@@ -1,0 +1,26 @@
+services:
+  flood-warning:
+    build: .
+    image: flood-warning-service:latest
+    container_name: flood-warning-service
+    ports:
+      - "${FLOOD_PORT:-8000}:8000"
+    environment:
+      # SQLite 数据文件位置（容器内），挂载到命名卷持久化
+      FLOOD_DB_PATH: /data/flood.db
+      # 审核/发布令牌；留空表示不鉴权（仅建议内网演示）
+      FLOOD_REVIEW_TOKEN: "${FLOOD_REVIEW_TOKEN:-}"
+      # 空库时是否自动写入演示站/设备/读数
+      FLOOD_SEED_DEMO: "${FLOOD_SEED_DEMO:-true}"
+    volumes:
+      - flood-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  flood-data:
